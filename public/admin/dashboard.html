@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Care | Admin Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 24px;
+      background: #0f766e;
+      color: white;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header button {
+      padding: 10px 16px;
+      border: 1px solid white;
+      border-radius: 8px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    .welcome,
+    .panel {
+      padding: 24px;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .welcome h2 {
+      margin-top: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 20px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #64748b;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #status {
+      color: #64748b;
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 16px;
+      }
+
+      header h1 {
+        font-size: 18px;
+      }
+
+      main {
+        margin-top: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vision Care Admin</h1>
+    <button id="logoutButton" type="button">Log Out</button>
+  </header>
+
+  <main>
+    <section class="welcome">
+      <h2>Welcome, Administrator!</h2>
+      <p id="adminName">Checking your session...</p>
+      <p id="status" role="status">Loading dashboard information...</p>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>Total Orders</h3>
+        <p id="orderCount">—</p>
+      </article>
+
+      <article class="card">
+        <h3>Active Products</h3>
+        <p id="productCount">—</p>
+      </article>
+
+      <article class="card">
+        <h3>Active Coupons</h3>
+        <p id="couponCount">—</p>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Admin Panel</h2>
+      <p>Your secure dashboard page is ready. We will connect the management features in the next steps.</p>
+    </section>
+  </main>
+
+  <script>
+    async function loadDashboard() {
+      try {
+        const response = await fetch("/api/admin/me", {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Could not verify admin session.");
+        }
+
+        document.getElementById("adminName").textContent =
+          "Signed in as " + data.username;
+
+        document.getElementById("status").textContent =
+          "Your admin session is active.";
+
+        const statsResponse = await fetch("/api/admin/stats", {
+      credentials: "same-origin"
+    });
+
+    if (statsResponse.status === 401) {
+      window.location.replace("/admin/login.html");
+      return;
+    }
+
+    const statsData = await statsResponse.json();
+
+    if (!statsResponse.ok || !statsData.success) {
+      throw new Error(
+        statsData.message || "Could not load dashboard statistics."
+      );
+    }
+
+    document.getElementById("orderCount").textContent =
+      statsData.stats.totalOrders;
+
+    document.getElementById("productCount").textContent =
+      statsData.stats.activeProducts;
+
+    document.getElementById("couponCount").textContent =
+      statsData.stats.activeCoupons;
+
+      } catch (error) {
+        document.getElementById("status").textContent =
+          "Could not load the dashboard. Please try again.";
+
+        console.error("Dashboard error:", error);
+      }
+    }
+
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+      try {
+        const response = await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+
+        if (response.ok) {
+          window.location.replace("/admin/login.html");
+        } else {
+          document.getElementById("status").textContent =
+            "Could not log out. Please try again.";
+        }
+      } catch (error) {
+        document.getElementById("status").textContent =
+          "Could not connect to the server to log out.";
+      }
+    });
+
+    loadDashboard();
+  </script>
+</body>
+</html>

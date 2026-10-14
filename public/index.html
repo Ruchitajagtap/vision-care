@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vision Care — See Better. Live Better.</title>
+<meta name="description" content="Vision Care is a local optical store offering prescription eyeglasses, sunglasses, computer glasses and contact lenses with fast delivery and expert support." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Announcement bar -->
+  <div class="announcement-bar">
+    Free eye check-up &nbsp;·&nbsp; Fast local delivery &nbsp;·&nbsp; Easy returns
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button id="hamburgerBtn" class="hamburger-btn" aria-label="Open menu">&#9776;</button>
+
+      <a href="#/" class="logo">
+        <span class="logo-mark">VC</span>
+        <span class="logo-text">Vision Care</span>
+      </a>
+
+      <nav id="mainNav" class="main-nav">
+        <a href="#/">Home</a>
+        <a href="#/catalog/eyeglasses">Eyeglasses</a>
+        <a href="#/catalog/sunglasses">Sunglasses</a>
+        <a href="#/catalog/computer-glasses">Computer Glasses</a>
+        <a href="#/catalog/contact-lenses">Contact Lenses</a>
+        <a href="#/catalog/offers">Offers</a>
+        <a href="#/about">About Us</a>
+        <a href="#/contact">Contact</a>
+      </nav>
+
+      <div class="header-search">
+        <input type="text" id="searchInput" placeholder="Search frames, brands..." />
+        <button id="searchBtn" aria-label="Search">&#128269;</button>
+      </div>
+
+      <div class="header-icons">
+        <button id="wishlistBtn" class="icon-btn" aria-label="Wishlist">
+          &#9825;<span id="wishlistCount" class="icon-badge hidden">0</span>
+        </button>
+        <button id="cartBtn" class="icon-btn" aria-label="Cart">
+          &#128722;<span id="cartCount" class="icon-badge hidden">0</span>
+        </button>
+        <button id="accountBtn" class="icon-btn" aria-label="Account">&#128100;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile slide-out menu -->
+  <div id="mobileMenuOverlay" class="mobile-menu-overlay hidden">
+    <div class="mobile-menu">
+      <div class="mobile-menu-top">
+        <span class="logo-text">Expert Eye Optic</span>
+        <button id="closeMobileMenu" class="icon-btn" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="mobile-search">
+        <input type="text" id="mobileSearchInput" placeholder="Search..." />
+      </div>
+      <a href="#/">Home</a>
+      <a href="#/catalog/eyeglasses">Eyeglasses</a>
+      <a href="#/catalog/sunglasses">Sunglasses</a>
+      <a href="#/catalog/computer-glasses">Computer Glasses</a>
+      <a href="#/catalog/contact-lenses">Contact Lenses</a>
+      <a href="#/catalog/offers">Offers</a>
+      <a href="#/about">About Us</a>
+      <a href="#/contact">Contact</a>
+      <a href="#/track">Track Order</a>
+    </div>
+  </div>
+
+  <!-- Page content gets injected here -->
+  <main id="app"></main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <div class="footer-logo">Vision Care</div>
+        <p>Your neighbourhood optical store, online. Genuine frames, expert fitting, and prescriptions handled with care.</p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-heading">Shop</div>
+        <a href="#/catalog/eyeglasses">Eyeglasses</a>
+        <a href="#/catalog/sunglasses">Sunglasses</a>
+        <a href="#/catalog/computer-glasses">Computer Glasses</a>
+        <a href="#/catalog/contact-lenses">Contact Lenses</a>
+        <a href="#/catalog/kids">Kids Eyewear</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-heading">Customer support</div>
+        <a href="#/track">Track Order</a>
+        <a href="#/account">My Account</a>
+        <a href="#/policy">Refund Policy</a>
+        <a href="#/policy">Terms &amp; Conditions</a>
+        <a href="#/policy">Privacy Policy</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-heading">Visit us</div>
+        <p>&#128205; 101 mahatma gandhi road,sindhu wadi, Ghatkopar East, Mumbai 400077</p>
+        <p>&#128222; +91 9136155722</p>
+        <p>&#9993; hello@visioncare.example</p>
+        <p>&#128337; Mon–Sun, 10am–9pm</p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 Vision Care Optical Store. All rights reserved.</div>
+  </footer>
+
+  <!-- Floating WhatsApp / Call buttons -->
+  <div class="floating-actions">
+    <a id="floatingWhatsapp" class="fab fab-whatsapp" href="#" target="_blank" rel="noopener" aria-label="Order on WhatsApp">&#128172;</a>
+    <a id="floatingCall" class="fab fab-call" href="tel:+919876543210" aria-label="Call store">&#128222;</a>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
