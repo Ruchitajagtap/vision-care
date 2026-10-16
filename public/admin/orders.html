@@ -1,0 +1,543 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Care | Order Management</title>
+
+  <style>
+    :root {
+      --teal: #087f73;
+      --teal-dark: #064e50;
+      --teal-hover: #119b8d;
+      --page: #f1f5f9;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding-left: 235px;
+      font-family: Arial, sans-serif;
+      background: var(--page);
+      color: var(--ink);
+    }
+
+    .admin-sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 235px;
+      padding: 24px 14px;
+      background: linear-gradient(180deg, var(--teal), var(--teal-dark));
+      color: white;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+
+    .sidebar-brand {
+      font-size: 19px;
+      font-weight: bold;
+      padding: 5px 10px 30px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 13px 14px;
+      border-radius: 8px;
+      color: #e0f2f1;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+      background: var(--teal-hover);
+      color: white;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px 10px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #ccfbf1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 20px 28px;
+      background: #0f766e;
+      color: white;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.12);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .header-link {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+    }
+
+    .header-link:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    main {
+      width: min(1200px, 100%);
+      margin: 30px auto;
+      padding: 0 22px;
+    }
+
+    .panel {
+      padding: 24px;
+      margin-bottom: 24px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-heading {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 23px;
+    }
+
+    .section-description {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #message {
+      margin: 12px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .toolbar input,
+    .toolbar select {
+      min-height: 43px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .toolbar input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .toolbar select {
+      min-width: 160px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      white-space: nowrap;
+    }
+
+    thead {
+      background: #f1f5f9;
+    }
+
+    th {
+      padding: 15px 16px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 15px 16px;
+      border-top: 1px solid #e8edf3;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    tbody tr:hover {
+      background: #f0fdfa;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-confirmed,
+    .status-completed,
+    .status-delivered {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-cancelled,
+    .status-failed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-processing,
+    .status-shipped {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 30px;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding-left: 0;
+      }
+
+      .admin-sidebar {
+        position: relative;
+        width: 100%;
+        padding: 12px;
+      }
+
+      .sidebar-brand {
+        padding: 8px 10px 14px;
+      }
+
+      .sidebar-nav {
+        flex-direction: row;
+        overflow-x: auto;
+      }
+
+      .sidebar-nav a {
+        white-space: nowrap;
+      }
+
+      .sidebar-footer {
+        display: none;
+      }
+
+      header {
+        padding: 18px;
+      }
+
+      header h1 {
+        font-size: 19px;
+      }
+
+      main {
+        margin: 20px auto;
+        padding: 0 12px;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">◉ Vision Care Admin</div>
+
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard.html">⌂ &nbsp; Dashboard</a>
+      <a href="/admin/products.html">▣ &nbsp; Products</a>
+      <a href="/admin/orders.html" class="active">🛒 &nbsp; Orders</a>
+      <a href="/admin/coupons.html">◇ &nbsp; Coupons</a>
+      <a href="/admin/customers.html">♙ &nbsp; Customers</a>
+      <a href="/admin/appointments.html">▦ &nbsp; Appointments</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      Expert Eye Optic<br>
+      Admin Panel v1.0
+    </div>
+  </aside>
+
+  <header>
+    <h1>Vision Care — Orders</h1>
+    <a class="header-link" href="/admin/dashboard.html">Back to Dashboard</a>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2 class="section-heading">Order Management</h2>
+      <p class="section-description">
+        View customer orders and check their current status.
+      </p>
+
+      <div class="toolbar">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search by order ID or customer..."
+          aria-label="Search orders"
+        >
+
+        <select id="statusFilter" aria-label="Filter orders by status">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="processing">Processing</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <p id="message" role="status" aria-live="polite">Loading orders...</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Order Date</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="orderTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const message = document.getElementById("message");
+    const tableBody = document.getElementById("orderTableBody");
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+
+    let allOrders = [];
+
+    function getOrderStatus(order) {
+      return String(order.status || "pending").toLowerCase();
+    }
+
+    function getOrderDate(order) {
+      const value = order.created_at || order.order_date || order.createdAt;
+      if (!value) return "—";
+
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? String(value)
+        : date.toLocaleDateString("en-IN");
+    }
+
+    function renderOrders() {
+      const search = searchInput.value.trim().toLowerCase();
+      const status = statusFilter.value.toLowerCase();
+
+      const filtered = allOrders.filter(order => {
+        const orderId = String(
+          order.order_code ?? order.order_number ?? order.id ?? ""
+        ).toLowerCase();
+
+        const customer = String(
+          order.customer_name ?? order.name ?? order.customerName ?? ""
+        ).toLowerCase();
+
+        const matchesSearch =
+          orderId.includes(search) || customer.includes(search);
+
+        const matchesStatus =
+          !status || getOrderStatus(order) === status;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      tableBody.replaceChildren();
+
+      if (filtered.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 7;
+        cell.className = "empty";
+        cell.textContent = allOrders.length
+          ? "No orders match your search."
+          : "No orders found.";
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+        return;
+      }
+
+      filtered.forEach(order => {
+        const row = document.createElement("tr");
+
+        const orderId =
+          order.order_code ?? order.order_number ?? order.id ?? "—";
+
+        const customer =
+          order.customer_name ?? order.name ?? order.customerName ?? "—";
+
+        const phone = order.phone ?? order.customer_phone ?? "—";
+
+        const total = Number(
+          order.total_amount ?? order.total ?? order.amount ?? 0
+        );
+
+        const payment =
+          order.payment_status ?? order.payment_method ?? "—";
+
+        const statusValue = getOrderStatus(order);
+
+        const values = [
+          orderId,
+          customer,
+          phone,
+          getOrderDate(order),
+          "₹" + total.toLocaleString("en-IN"),
+          payment
+        ];
+
+        values.forEach(value => {
+          const cell = document.createElement("td");
+          cell.textContent = value ?? "—";
+          row.appendChild(cell);
+        });
+
+        const statusCell = document.createElement("td");
+        const badge = document.createElement("span");
+
+        badge.className = "status status-" +
+          statusValue.replace(/[^a-z0-9_-]/g, "");
+
+        badge.textContent = statusValue;
+        statusCell.appendChild(badge);
+        row.appendChild(statusCell);
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function loadOrders() {
+      message.textContent = "Loading orders...";
+
+      try {
+        const sessionResponse = await fetch("/api/admin/me", {
+          credentials: "same-origin"
+        });
+
+        if (sessionResponse.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+
+        if (!sessionResponse.ok) {
+          throw new Error("Could not verify your admin session.");
+        }
+
+        const response = await fetch("/api/admin/orders", {
+          credentials: "same-origin"
+        });
+
+        if (response.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Could not load orders.");
+        }
+
+        if (!Array.isArray(data.orders)) {
+          throw new Error("The orders API returned an unexpected response.");
+        }
+
+        allOrders = data.orders;
+        renderOrders();
+
+        message.textContent =
+          "Loaded " + allOrders.length + " order(s).";
+
+      } catch (error) {
+        console.error("Order loading error:", error);
+        message.textContent =
+          "Could not load orders. Please check the admin orders API.";
+      }
+    }
+
+    searchInput.addEventListener("input", renderOrders);
+    statusFilter.addEventListener("change", renderOrders);
+
+    loadOrders();
+  </script>
+</body>
+</html>

@@ -1,8 +1,5 @@
 /* ============================================================
    VISION CARE — app.js
-   Plain JavaScript single-page app. No React, no build step.
-   Data persistence: browser localStorage (this is a front-end-only
-   demo — see the chat notes on what a real backend would add).
    ============================================================ */
 
 /* ---------------- storage helpers ---------------- */
@@ -24,11 +21,6 @@ function saveJSON(key, value) {
   }
 }
 
-/* ---------------- password hashing (client-side demo) ----------------
-   Real salted hashing using the browser's built-in crypto.subtle API —
-   genuinely better than storing plain text, but still not a substitute
-   for server-side auth, since anyone with access to this browser's
-   localStorage can see the stored hash. */
 function randomSaltHex() {
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
@@ -261,12 +253,7 @@ function renderHome() {
           <button class="btn btn-outline-light btn-lg" data-action="go" data-route="#/appointment">Book eye check-up</button>
         </div>
       </div>
-      <div class="hero-images">
-        <div class="lens-frame" style="width:220px;"><img src="${svgToDataUri(glassesSVG("Rectangle", "#20242A", "#DCE7EE", false))}" alt="Eyewear"/></div>
-        <div class="hero-images-col">
-          <div class="lens-frame" style="width:140px;"><img src="${svgToDataUri(glassesSVG("Aviator", "#4B5560", "#33404A", false))}" alt="Eyewear"/></div>
-          <div class="lens-frame" style="width:140px;"><img src="${svgToDataUri(glassesSVG("Round", "#6B4A2E", "#E8EEF2", false))}" alt="Eyewear"/></div>
-        </div>
+       <div class="image/bg1.png"></div>-
       </div>
     </div>
   </section>
@@ -1236,11 +1223,13 @@ async function loadProductsFromAPI() {
         gender: product.gender || "Unisex",
         rating: Number(product.rating || 4.0).toFixed(1),
         reviewCount: Number(product.reviewCount || 0),
-        images: buildProductImages(
-          frameShape,
-          frameColor,
-          product.category
-        ),
+        images: product.imageUrl
+          ? [product.imageUrl, product.imageUrl, product.imageUrl]
+          : buildProductImages(
+              frameShape,
+              frameColor,
+              product.category
+            ),
         prescriptionRequired: categoryInfo
           ? categoryInfo.rx
           : false,
@@ -1351,7 +1340,10 @@ function onAppClick(e) {
     case "track-search": doTrackSearch(); break;
 
     // appointment
-    case "apt-submit": doAppointmentSubmit(); break;
+    case "apt-submit":
+  console.log("Appointment button clicked!");
+  doAppointmentSubmit();
+  break;
 
     // account
     case "auth-switch-mode": authState.mode = el.dataset.mode; authState.error = ""; rerender(); break;
@@ -1494,21 +1486,92 @@ function doTrackSearch() {
   rerender();
 }
 
-function doAppointmentSubmit() {
+async function doAppointmentSubmit() {
+  console.log("doAppointmentSubmit started!");
+
   const f = appointmentState.form;
   const e = {};
-  if (!f.name.trim()) e.name = "Enter your name.";
-  if (!/^\d{10}$/.test(f.phone.trim())) e.phone = "Enter a valid 10-digit number.";
-  if (!f.date) e.date = "Pick a date.";
-  else if (new Date(f.date) < new Date(new Date().toDateString())) e.date = "Pick a date from today onward.";
-  if (!f.time) e.time = "Pick a time.";
+
+  if (!f.name.trim()) {
+    e.name = "Enter your name.";
+  }
+
+  if (!/^\d{10}$/.test(f.phone.trim())) {
+    e.phone = "Enter a valid 10-digit number.";
+  }
+
+  if (!f.date) {
+    e.date = "Pick a date.";
+  } else {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedDate = new Date(f.date + "T00:00:00");
+
+    if (
+      Number.isNaN(selectedDate.getTime()) ||
+      selectedDate < today
+    ) {
+      e.date = "Pick a valid date from today onward.";
+    }
+  }
+
+  if (!f.time) {
+    e.time = "Pick a time.";
+  }
+
   appointmentState.errors = e;
-  if (Object.keys(e).length) { rerender(); return; }
-  state.appointments.unshift({ ...f, id: "APT" + Date.now().toString().slice(-6), status: "Requested" });
-  persist("appointments");
-  appointmentState.done = true;
-  rerender();
+
+  if (Object.keys(e).length > 0) {
+    rerender();
+    return;
+  }
+
+  try {
+    console.log("Sending appointment to backend...", f);
+
+    const response = await fetch("/api/appointments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        customerName: f.name.trim(),
+        phone: f.phone.trim(),
+        appointmentDate: f.date,
+        appointmentTime: f.time
+      })
+    });
+
+    console.log("Backend response status:", response.status);
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || "Could not book your appointment."
+      );
+    }
+
+    state.appointments.unshift({
+      ...f,
+      id: result.appointment?.appointmentCode || result.appointmentCode,
+      status: "Requested"
+    });
+
+    persist("appointments");
+
+    appointmentState.done = true;
+    rerender();
+
+    toast("Appointment requested successfully!");
+
+  } catch (error) {
+    console.error("Appointment booking error:", error);
+    toast(error.message || "Could not book appointment. Please try again.");
+  }
 }
+
 
 async function doAuthSubmit() {
   const as = authState;

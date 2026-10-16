@@ -1,0 +1,698 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coupons | Vision Care Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f7f8;
+      color: #24343b;
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+   .sidebar {
+     width: 235px;
+     min-width: 235px;
+     background: linear-gradient(180deg, #087f73, #064e50);
+     color: white;
+     padding: 28px 16px;
+     flex-shrink: 0;
+}
+
+    .brand {
+      font-size: 23px;
+      font-weight: bold;
+      margin: 0 10px 8px;
+    }
+
+    .subtitle {
+      color: #bdd1d3;
+      font-size: 12px;
+      margin: 0 10px 30px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 13px 14px;
+      margin-bottom: 7px;
+      color: #e5eeee;
+      text-decoration: none;
+      border-radius: 7px;
+      font-size: 14px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+     background: #119b8d;
+      color: white;
+}
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      padding: 32px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 27px;
+      margin-bottom: 7px;
+    }
+
+    .muted {
+      color: #718087;
+      font-size: 14px;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 7px;
+      padding: 11px 16px;
+      background: #17656c;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .button:hover {
+      background: #104c52;
+    }
+
+    .button.secondary {
+      background: #e5eeee;
+      color: #17464b;
+    }
+
+    .button.danger {
+      background: #b93838;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card,
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 3px 12px rgba(25, 55, 60, 0.05);
+    }
+
+    .stat-card p {
+      color: #718087;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card h2 {
+      font-size: 28px;
+      color: #164e54;
+    }
+
+    .panel {
+      margin-bottom: 24px;
+    }
+
+    .panel h2 {
+      font-size: 19px;
+      margin-bottom: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #d6e0e2;
+      border-radius: 6px;
+      outline-color: #17656c;
+      background: white;
+    }
+
+    .form-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px 12px;
+      border-bottom: 1px solid #e9eeee;
+      font-size: 13px;
+    }
+
+    th {
+      color: #617176;
+      background: #f8fafa;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .code {
+      font-weight: bold;
+      color: #175a61;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .status.active {
+      background: #e1f5e8;
+      color: #207442;
+    }
+
+    .status.inactive {
+      background: #fce8e8;
+      color: #a32f2f;
+    }
+
+    .actions {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .actions .button {
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+
+    #message {
+      margin-bottom: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #message.error {
+      color: #b42323;
+    }
+
+    #message.success {
+      color: #19703a;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      color: #718087;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 190px;
+      }
+
+      .main {
+        padding: 22px;
+      }
+
+      .form-grid,
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      .layout {
+        display: block;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 18px 12px;
+      }
+
+      .sidebar a {
+        display: inline-block;
+        margin: 4px 2px;
+      }
+
+      .subtitle {
+        margin-bottom: 15px;
+      }
+
+      .main {
+        padding: 18px 12px;
+      }
+
+      .form-grid,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="brand">Vision Care</div>
+      <div class="subtitle">ADMIN PANEL</div>
+
+      <nav>
+        <a href="/admin/dashboard.html">Dashboard</a>
+        <a href="/admin/products.html">Products</a>
+        <a href="/admin/orders.html">Orders</a>
+        <a href="/admin/coupons.html" class="active">Coupons</a>
+        <a href="/admin/customers.html">Customers</a>
+        <a href="/admin/appointments.html">Appointments</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h1>Coupons Management</h1>
+          <p class="muted">Create and manage discounts for Vision Care customers.</p>
+        </div>
+
+        <button class="button secondary" id="refreshBtn" type="button">
+          Refresh Coupons
+        </button>
+      </div>
+
+      <div id="message" role="status" aria-live="polite"></div>
+
+      <section class="stats">
+        <div class="stat-card">
+          <p>Total Coupons</p>
+          <h2 id="totalCoupons">0</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Active Coupons</p>
+          <h2 id="activeCoupons">0</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Total Times Used</p>
+          <h2 id="totalUses">0</h2>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Create New Coupon</h2>
+
+        <form id="couponForm">
+          <div class="form-grid">
+            <div class="field">
+              <label for="code">Coupon Code</label>
+              <input
+                id="code"
+                name="code"
+                type="text"
+                placeholder="e.g. VISION20"
+                maxlength="30"
+                pattern="[A-Za-z0-9_-]{3,30}"
+                title="Use 3–30 letters, numbers, hyphens, or underscores."
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="discount">Discount (%)</label>
+              <input
+                id="discount"
+                name="discount_percent"
+                type="number"
+                min="0.01"
+                max="100"
+                step="0.01"
+                placeholder="20"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="minimum">Minimum Order Amount (₹)</label>
+              <input
+                id="minimum"
+                name="minimum_order"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="usageLimit">Usage Limit</label>
+              <input
+                id="usageLimit"
+                name="usage_limit"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="100"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="expiresAt">Expiry Date (optional)</label>
+              <input
+                id="expiresAt"
+                name="expires_at"
+                type="date"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="button" type="submit">Create Coupon</button>
+            <button class="button secondary" type="reset">Clear Form</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Existing Coupons</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Coupon Code</th>
+                <th>Discount</th>
+                <th>Minimum Order</th>
+                <th>Usage</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="couponTable">
+              <tr>
+                <td colspan="7" class="empty">Loading coupons...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const table = document.getElementById("couponTable");
+    const message = document.getElementById("message");
+    const form = document.getElementById("couponForm");
+
+    function showMessage(text, type = "") {
+      message.textContent = text;
+      message.className = type;
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        credentials: "same-origin",
+        ...options,
+        headers: {
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Request failed (${response.status})`);
+      }
+
+      return data;
+    }
+
+    function getCoupons(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.coupons)) return data.coupons;
+      if (Array.isArray(data.data)) return data.data;
+      return [];
+    }
+
+    function safeText(value) {
+      return String(value ?? "");
+    }
+
+    function formatDate(value) {
+      if (!value) return "No expiry";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return safeText(value).slice(0, 10);
+
+      return date.toLocaleDateString("en-IN");
+    }
+
+    function makeCell(text, className = "") {
+      const td = document.createElement("td");
+      td.textContent = text;
+      if (className) td.className = className;
+      return td;
+    }
+
+    async function loadCoupons() {
+      table.replaceChildren();
+      const loadingRow = document.createElement("tr");
+      const loadingCell = makeCell("Loading coupons...", "empty");
+      loadingCell.colSpan = 7;
+      loadingRow.appendChild(loadingCell);
+      table.appendChild(loadingRow);
+
+      try {
+        const data = await apiRequest("/api/admin/coupons");
+        const coupons = getCoupons(data);
+
+        document.getElementById("totalCoupons").textContent = coupons.length;
+        document.getElementById("activeCoupons").textContent =
+          coupons.filter(c => Number(c.active) === 1 || c.active === true).length;
+        document.getElementById("totalUses").textContent =
+          coupons.reduce((sum, c) => sum + (Number(c.used_count) || 0), 0);
+
+        table.replaceChildren();
+
+        if (coupons.length === 0) {
+          const row = document.createElement("tr");
+          const cell = makeCell("No coupons found.", "empty");
+          cell.colSpan = 7;
+          row.appendChild(cell);
+          table.appendChild(row);
+          return;
+        }
+
+        coupons.forEach(coupon => {
+          const row = document.createElement("tr");
+          const isActive = Number(coupon.active) === 1 || coupon.active === true;
+          const used = Number(coupon.used_count) || 0;
+          const limit = Number(coupon.usage_limit) || 0;
+
+          row.appendChild(makeCell(safeText(coupon.code), "code"));
+          row.appendChild(makeCell(`${coupon.discount_percent}%`));
+          row.appendChild(makeCell(`₹${Number(coupon.minimum_order || 0).toLocaleString("en-IN")}`));
+          row.appendChild(makeCell(`${used} / ${limit}`));
+          row.appendChild(makeCell(formatDate(coupon.expires_at)));
+
+          const statusCell = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = `status ${isActive ? "active" : "inactive"}`;
+          badge.textContent = isActive ? "Active" : "Inactive";
+          statusCell.appendChild(badge);
+          row.appendChild(statusCell);
+
+          const actionsCell = document.createElement("td");
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const toggleButton = document.createElement("button");
+          toggleButton.type = "button";
+          toggleButton.className = "button secondary";
+          toggleButton.textContent = isActive ? "Deactivate" : "Activate";
+          toggleButton.addEventListener("click", () => {
+            toggleCoupon(coupon.id, isActive ? 0 : 1);
+          });
+
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "button danger";
+          deleteButton.textContent = "Delete";
+          deleteButton.addEventListener("click", () => {
+            deleteCoupon(coupon.id, coupon.code);
+          });
+
+          actions.append(toggleButton, deleteButton);
+          actionsCell.appendChild(actions);
+          row.appendChild(actionsCell);
+
+          table.appendChild(row);
+        });
+      } catch (error) {
+        table.replaceChildren();
+        const row = document.createElement("tr");
+        const cell = makeCell(
+          error.message.includes("401") || error.message.includes("403")
+            ? "Please log in to the admin panel, then refresh this page."
+            : `Could not load coupons: ${error.message}`,
+          "empty"
+        );
+        cell.colSpan = 7;
+        row.appendChild(cell);
+        table.appendChild(row);
+        showMessage(error.message, "error");
+      }
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const code = document.getElementById("code").value.trim().toUpperCase();
+      const discount = Number(document.getElementById("discount").value);
+      const minimum = Number(document.getElementById("minimum").value);
+      const usageLimit = Number(document.getElementById("usageLimit").value);
+      const expiryInput = document.getElementById("expiresAt").value;
+
+      if (!/^[A-Z0-9_-]{3,30}$/.test(code)) {
+        showMessage("Coupon code must be 3–30 letters, numbers, hyphens, or underscores.", "error");
+        return;
+      }
+
+      if (!(discount > 0 && discount <= 100)) {
+        showMessage("Discount must be greater than 0 and no more than 100%.", "error");
+        return;
+      }
+
+      if (minimum < 0 || !Number.isFinite(minimum)) {
+        showMessage("Minimum order amount cannot be negative.", "error");
+        return;
+      }
+
+      if (!Number.isInteger(usageLimit) || usageLimit < 1) {
+        showMessage("Usage limit must be a whole number of at least 1.", "error");
+        return;
+      }
+
+      // Use the end of the selected day for the expiry timestamp.
+      const expiresAt = expiryInput
+        ? `${expiryInput}T23:59:59`
+        : null;
+
+      try {
+        await apiRequest("/api/admin/coupons", {
+          method: "POST",
+          body: JSON.stringify({
+            code,
+            discount_percent: discount,
+            minimum_order: minimum,
+            usage_limit: usageLimit,
+            expires_at: expiresAt
+          })
+        });
+
+        showMessage("Coupon created successfully.", "success");
+        form.reset();
+        document.getElementById("minimum").value = "0";
+        await loadCoupons();
+      } catch (error) {
+        showMessage(`Could not create coupon: ${error.message}`, "error");
+      }
+    });
+
+    async function toggleCoupon(id, active) {
+      if (!id) {
+        showMessage("This coupon has no ID, so it cannot be updated.", "error");
+        return;
+      }
+
+      try {
+        await apiRequest(`/api/admin/coupons/${encodeURIComponent(id)}/active`, {
+          method: "PATCH",
+          body: JSON.stringify({ active })
+        });
+
+        showMessage("Coupon status updated.", "success");
+        await loadCoupons();
+      } catch (error) {
+        showMessage(`Could not update coupon: ${error.message}`, "error");
+      }
+    }
+
+    async function deleteCoupon(id, code) {
+      if (!id) {
+        showMessage("This coupon has no ID, so it cannot be deleted.", "error");
+        return;
+      }
+
+      if (!confirm(`Delete coupon "${code}"? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/api/admin/coupons/${encodeURIComponent(id)}`, {
+          method: "DELETE"
+        });
+
+        showMessage("Coupon deleted successfully.", "success");
+        await loadCoupons();
+      } catch (error) {
+        showMessage(`Could not delete coupon: ${error.message}`, "error");
+      }
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", loadCoupons);
+
+    loadCoupons();
+  </script>
+</body>
+</html>

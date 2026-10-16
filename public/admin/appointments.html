@@ -1,0 +1,696 @@
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointments | Vision Care Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: #243746;
+    }
+
+    .sidebar {
+      width: 235px;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding: 28px 16px;
+      background: linear-gradient(180deg, #087f73, #064e50);
+      color: white;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: bold;
+      margin: 0 10px 8px;
+    }
+
+    .sidebar-subtitle {
+      color: #c5e4df;
+      font-size: 12px;
+      letter-spacing: 1px;
+      margin: 0 10px 30px;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 13px 14px;
+      margin-bottom: 7px;
+      color: #e5eeee;
+      text-decoration: none;
+      border-radius: 7px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background: #119b8d;
+      color: white;
+    }
+
+    .main {
+      margin-left: 235px;
+      min-width: 0;
+      padding: 32px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: 27px;
+      color: #163d3d;
+      margin-bottom: 7px;
+    }
+
+    .muted {
+      color: #718087;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search,
+    .filter {
+      padding: 11px 13px;
+      border: 1px solid #d6e0e2;
+      border-radius: 7px;
+      background: white;
+      font-size: 14px;
+      outline-color: #087f73;
+    }
+
+    .search {
+      width: 280px;
+      max-width: 100%;
+    }
+
+    .filter {
+      min-width: 150px;
+      color: #243746;
+    }
+
+    .button {
+      border: none;
+      border-radius: 7px;
+      padding: 11px 16px;
+      background: #087f73;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .button:hover {
+      background: #06665d;
+    }
+
+    .button.secondary {
+      background: #e2f1ef;
+      color: #08665e;
+    }
+
+    .button.secondary:hover {
+      background: #cce7e2;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card,
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 3px 12px rgba(25, 55, 60, 0.04);
+    }
+
+    .stat-card p {
+      color: #718087;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card h2 {
+      font-size: 28px;
+      color: #087f73;
+    }
+
+    .panel {
+      margin-bottom: 24px;
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .panel-heading h2 {
+      font-size: 19px;
+      color: #263f46;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 850px;
+    }
+
+    th,
+    td {
+      padding: 14px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e9eeee;
+      font-size: 13px;
+    }
+
+    th {
+      color: #617176;
+      background: #f8fafa;
+      font-size: 12px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #f8fcfb;
+    }
+
+    .code {
+      color: #087f73;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .status-select {
+      padding: 8px 10px;
+      border: 1px solid #d6e0e2;
+      border-radius: 7px;
+      background: white;
+      color: #243746;
+      font-size: 13px;
+      cursor: pointer;
+      min-width: 125px;
+    }
+
+    .status-select:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      color: #718087;
+    }
+
+    #message {
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    #message.error {
+      color: #b42323;
+    }
+
+    #message.success {
+      color: #19703a;
+    }
+
+    @media (max-width: 1100px) {
+      .main {
+        padding: 24px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .search {
+        width: 240px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding: 18px 12px;
+      }
+
+      .sidebar-subtitle {
+        margin-bottom: 15px;
+      }
+
+      .sidebar nav a {
+        display: inline-block;
+        padding: 10px;
+        margin: 3px 2px;
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 20px 14px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        width: 100%;
+      }
+
+      .search,
+      .filter {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <div class="brand">Vision Care</div>
+    <div class="sidebar-subtitle">ADMIN PANEL</div>
+
+    <nav>
+      <a href="/admin/dashboard.html">Dashboard</a>
+      <a href="/admin/products.html">Products</a>
+      <a href="/admin/orders.html">Orders</a>
+      <a href="/admin/coupons.html">Coupons</a>
+      <a href="/admin/customers.html">Customers</a>
+      <a href="/admin/appointments.html" class="active">Appointments</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Appointments Management</h1>
+        <p class="muted">
+          View appointment requests and manage their status.
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <input
+          type="search"
+          id="searchInput"
+          class="search"
+          placeholder="Search code, customer or phone..."
+          aria-label="Search appointments"
+        >
+
+        <select id="statusFilter" class="filter" aria-label="Filter by status">
+          <option value="all">All Statuses</option>
+          <option value="requested">Requested</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        <button class="button secondary" id="refreshBtn" type="button">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <p>Total Appointments</p>
+        <h2 id="totalCount">—</h2>
+      </div>
+
+      <div class="stat-card">
+        <p>Requested</p>
+        <h2 id="requestedCount">—</h2>
+      </div>
+
+      <div class="stat-card">
+        <p>Confirmed</p>
+        <h2 id="confirmedCount">—</h2>
+      </div>
+
+      <div class="stat-card">
+        <p>Completed</p>
+        <h2 id="completedCount">—</h2>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Appointments List</h2>
+        <p class="muted" id="resultLabel">Loading appointments...</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Appointment Code</th>
+              <th>Customer Name</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody id="appointmentsTable">
+            <tr>
+              <td colspan="6" class="empty">Loading appointments...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script>
+    const appointmentsTable = document.getElementById("appointmentsTable");
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const message = document.getElementById("message");
+    const resultLabel = document.getElementById("resultLabel");
+
+    const allowedStatuses = [
+      "requested",
+      "confirmed",
+      "completed",
+      "cancelled"
+    ];
+
+    let allAppointments = [];
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, function (char) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[char];
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+
+      // Preserve the calendar date from MySQL DATE values.
+      const dateString = String(value).slice(0, 10);
+      const parts = dateString.split("-");
+
+      if (parts.length !== 3) return "—";
+
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      const date = new Date(year, month - 1, day);
+
+      if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+      ) {
+        return "—";
+      }
+
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    function formatStatus(status) {
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function showMessage(text, type = "") {
+      message.textContent = text;
+      message.className = type;
+    }
+
+    function updateStats(appointments) {
+      document.getElementById("totalCount").textContent = appointments.length;
+
+      document.getElementById("requestedCount").textContent =
+        appointments.filter(item => item.status === "requested").length;
+
+      document.getElementById("confirmedCount").textContent =
+        appointments.filter(item => item.status === "confirmed").length;
+
+      document.getElementById("completedCount").textContent =
+        appointments.filter(item => item.status === "completed").length;
+    }
+
+    function renderAppointments(appointments) {
+      resultLabel.textContent =
+        `Showing ${appointments.length} of ${allAppointments.length} appointment(s)`;
+
+      if (appointments.length === 0) {
+        appointmentsTable.innerHTML =
+          '<tr><td colspan="6" class="empty">No appointments found.</td></tr>';
+        return;
+      }
+
+      appointmentsTable.innerHTML = appointments.map(function (item) {
+        const currentStatus = allowedStatuses.includes(item.status)
+          ? item.status
+          : "requested";
+
+        const options = allowedStatuses.map(function (status) {
+          return `
+            <option value="${status}"
+              ${status === currentStatus ? "selected" : ""}>
+              ${formatStatus(status)}
+            </option>
+          `;
+        }).join("");
+
+        return `
+          <tr>
+            <td class="code">${escapeHTML(item.appointment_code || "—")}</td>
+            <td>${escapeHTML(item.customer_name || "—")}</td>
+            <td>${escapeHTML(item.phone || "—")}</td>
+            <td>${formatDate(item.appointment_date)}</td>
+            <td>${escapeHTML(item.appointment_time || "—")}</td>
+            <td>
+              <select
+                class="status-select"
+                data-id="${Number(item.id)}"
+                data-original-status="${escapeHTML(currentStatus)}"
+                aria-label="Status for appointment ${escapeHTML(item.appointment_code || item.id)}"
+              >
+                ${options}
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function loadAppointments() {
+      showMessage("");
+      resultLabel.textContent = "Loading appointments...";
+
+      appointmentsTable.innerHTML =
+        '<tr><td colspan="6" class="empty">Loading appointments...</td></tr>';
+
+      try {
+        const response = await fetch("/api/admin/appointments", {
+          credentials: "same-origin"
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || response.status === 403) {
+          allAppointments = [];
+          appointmentsTable.innerHTML =
+            '<tr><td colspan="6" class="empty">Please log in as an administrator, then reload this page.</td></tr>';
+
+          updateStats([]);
+          resultLabel.textContent = "Authentication required";
+          showMessage("Your admin session may have expired. Please log in again.", "error");
+          return;
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Could not load appointments.");
+        }
+
+        allAppointments = Array.isArray(data.appointments)
+          ? data.appointments
+          : [];
+
+        updateStats(allAppointments);
+        filterAppointments();
+
+      } catch (error) {
+        allAppointments = [];
+        appointmentsTable.innerHTML =
+          '<tr><td colspan="6" class="empty">Unable to load appointments.</td></tr>';
+
+        updateStats([]);
+        resultLabel.textContent = "Could not load appointments";
+        showMessage(
+          error.message + " Check the backend server and API route.",
+          "error"
+        );
+      }
+    }
+
+    function filterAppointments() {
+      const term = searchInput.value.trim().toLowerCase();
+      const selectedStatus = statusFilter.value;
+
+      const filtered = allAppointments.filter(function (item) {
+        const matchesSearch = [
+          item.appointment_code,
+          item.customer_name,
+          item.phone,
+          item.appointment_date,
+          item.appointment_time,
+          item.status
+        ].some(function (value) {
+          return String(value || "").toLowerCase().includes(term);
+        });
+
+        const matchesStatus =
+          selectedStatus === "all" || item.status === selectedStatus;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      renderAppointments(filtered);
+    }
+
+    async function updateAppointmentStatus(select) {
+      const id = select.dataset.id;
+      const originalStatus = select.dataset.originalStatus;
+      const newStatus = select.value;
+
+      if (!allowedStatuses.includes(newStatus)) {
+        select.value = originalStatus;
+        return;
+      }
+
+      if (newStatus === originalStatus) return;
+
+      select.disabled = true;
+      showMessage("Updating appointment status...");
+
+      try {
+        const response = await fetch(
+          `/api/admin/appointments/${encodeURIComponent(id)}/status`,
+          {
+            method: "PATCH",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: newStatus })
+          }
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Your admin session has expired. Please log in again.");
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message || "Could not update appointment status."
+          );
+        }
+
+        const appointment = allAppointments.find(function (item) {
+          return String(item.id) === String(id);
+        });
+
+        if (appointment) {
+          appointment.status = newStatus;
+        }
+
+        select.dataset.originalStatus = newStatus;
+
+        updateStats(allAppointments);
+        filterAppointments();
+
+        showMessage(
+          "Appointment status updated to " + formatStatus(newStatus) + ".",
+          "success"
+        );
+
+      } catch (error) {
+        select.value = originalStatus;
+        showMessage(error.message, "error");
+
+      } finally {
+        select.disabled = false;
+      }
+    }
+
+    searchInput.addEventListener("input", filterAppointments);
+    statusFilter.addEventListener("change", filterAppointments);
+
+    document.getElementById("refreshBtn").addEventListener("click", loadAppointments);
+
+    appointmentsTable.addEventListener("change", function (event) {
+      if (event.target.matches(".status-select")) {
+        updateAppointmentStatus(event.target);
+      }
+    });
+
+    loadAppointments();
+  </script>
+</body>
+</html>

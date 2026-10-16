@@ -129,6 +129,213 @@ app.get("/api/admin/stats", async (req, res) => {
     });
   }
 
+  app.get("/api/admin/products", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in."
+    });
+  }
+
+  app.post("/api/admin/products", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in."
+    });
+  }
+
+  app.get("/api/admin/orders", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as an administrator."
+    });
+  }
+
+  try {
+    const [orders] = await pool.query(`
+      SELECT
+        id,
+        order_code,
+        customer_name,
+        email,
+        phone,
+        address,
+        subtotal,
+        discount,
+        delivery_fee,
+        total,
+        payment_method,
+        payment_status,
+        order_status,
+        created_at
+      FROM orders
+      ORDER BY created_at DESC, id DESC
+    `);
+
+    res.json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    console.error("Admin orders loading error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not load orders."
+    });
+  }
+});
+
+  const {
+    product_code,
+    name,
+    category,
+    brand,
+    price,
+    original_price,
+    stock,
+    description,
+    image_url
+  } = req.body;
+
+  if (
+    typeof product_code !== "string" ||
+    typeof name !== "string" ||
+    typeof category !== "string" ||
+    !product_code.trim() ||
+    !name.trim() ||
+    !category.trim()
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Product code, name, and category are required."
+    });
+  }
+
+  const validPrice = (value) =>
+    value !== "" &&
+    value !== null &&
+    value !== undefined &&
+    Number.isFinite(Number(value)) &&
+    Number(value) >= 0;
+
+  if (!validPrice(price)) {
+    return res.status(400).json({
+      success: false,
+      message: "Enter a valid selling price."
+    });
+  }
+
+  const originalPriceProvided =
+    original_price !== "" &&
+    original_price !== null &&
+    original_price !== undefined;
+
+  if (
+    originalPriceProvided &&
+    (!validPrice(original_price) ||
+      Number(original_price) < Number(price))
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Original price must be valid and at least the selling price."
+    });
+  }
+
+  if (
+    stock === "" ||
+    stock === null ||
+    stock === undefined ||
+    !Number.isSafeInteger(Number(stock)) ||
+    Number(stock) < 0
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Stock must be a whole number of zero or more."
+    });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO products
+        (product_code, name, category, brand, price, original_price,
+         stock, description, image_url, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      [
+        product_code.trim(),
+        name.trim(),
+        category.trim(),
+        typeof brand === "string" && brand.trim()
+          ? brand.trim()
+          : null,
+        Number(price),
+        originalPriceProvided ? Number(original_price) : null,
+        Number(stock),
+        typeof description === "string" && description.trim()
+          ? description.trim()
+          : null,
+        typeof image_url === "string" && image_url.trim()
+          ? image_url.trim()
+          : null
+      ]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Product added successfully.",
+      productId: result.insertId
+    });
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        success: false,
+        message: "That product code already exists. Please use a different code."
+      });
+    }
+
+    console.error("Add product error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not add the product. Please check the server logs."
+    });
+  }
+});
+
+  try {
+    const [products] = await pool.query(`
+      SELECT
+        id,
+        product_code,
+        name,
+        category,
+        brand,
+        price,
+        original_price,
+        stock,
+        description,
+        image_url,
+        active
+      FROM products
+      ORDER BY id DESC
+    `);
+
+    res.json({
+      success: true,
+      products
+    });
+  } catch (error) {
+    console.error("Admin products error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not load products."
+    });
+  }
+});
+
   try {
     const [orderRows] = await pool.query(
       "SELECT COUNT(*) AS total FROM orders"
@@ -543,6 +750,655 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
+
+// ================= ADMIN ORDER MANAGEMENT =================
+
+// Get all orders with search and status filters
+app.get("/api/admin/orders", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const search = String(req.query.search || "").trim();
+    const status = String(req.query.status || "").trim();
+    const payment = String(req.query.payment || "").trim();
+
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      conditions.push(`(
+        order_code LIKE ? OR
+        customer_name LIKE ? OR
+        email LIKE ? OR
+        phone LIKE ?
+      )`);
+
+      const term = `%${search}%`;
+      params.push(term, term, term, term);
+    }
+
+    const allowedStatuses = [
+      "placed",
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled"
+    ];
+
+    if (status && allowedStatuses.includes(status)) {
+      conditions.push("order_status = ?");
+      params.push(status);
+    }
+
+    const allowedPayments = [
+      "pending",
+      "paid",
+      "failed",
+      "refunded"
+    ];
+
+    if (payment && allowedPayments.includes(payment)) {
+      conditions.push("payment_status = ?");
+      params.push(payment);
+    }
+
+    const where = conditions.length
+      ? "WHERE " + conditions.join(" AND ")
+      : "";
+
+    const [orders] = await pool.query(
+      `SELECT
+        id,
+        order_code,
+        customer_name,
+        email,
+        phone,
+        address,
+        subtotal,
+        discount,
+        delivery_fee,
+        total,
+        payment_method,
+        payment_status,
+        order_status
+       FROM orders
+       ${where}
+       ORDER BY id DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      count: orders.length,
+      orders
+    });
+  } catch (error) {
+    console.error("Admin orders error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not load orders."
+    });
+  }
+});
+
+
+// Update an order's delivery/order status
+app.patch("/api/admin/orders/:id/status", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  const allowedStatuses = [
+    "placed",
+    "confirmed",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled"
+  ];
+
+  const { status } = req.body;
+  const id = Number(req.params.id);
+
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 1 ||
+    !allowedStatuses.includes(status)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid order ID or order status."
+    });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE orders SET order_status = ? WHERE id = ?",
+      [status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      const [rows] = await pool.query(
+        "SELECT id FROM orders WHERE id = ?",
+        [id]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found."
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Order status updated successfully."
+    });
+  } catch (error) {
+    console.error("Update order status error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not update order status."
+    });
+  }
+});
+
+
+/* ========== ADMIN COUPON MANAGEMENT ========== */
+
+// 1. View existing coupons
+app.get("/api/admin/coupons", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const [coupons] = await pool.query(`
+      SELECT id, code, discount_percent, minimum_order,
+             usage_limit, used_count, expires_at, active
+      FROM coupons
+      ORDER BY id DESC
+    `);
+
+    res.json({ success: true, coupons });
+  } catch (error) {
+    console.error("Admin coupons error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Could not load coupons."
+    });
+  }
+});
+
+
+// 2. Create a new coupon from the admin panel
+app.post("/api/admin/coupons", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const code = String(req.body.code || "").trim().toUpperCase();
+    const discount = Number(req.body.discount_percent);
+    const minimum = Number(req.body.minimum_order);
+    const limit = Number(req.body.usage_limit);
+    const expiry = req.body.expires_at || null;
+
+    if (
+      !/^[A-Z0-9_-]{3,30}$/.test(code) ||
+      !Number.isFinite(discount) || discount <= 0 || discount > 100 ||
+      !Number.isFinite(minimum) || minimum < 0 ||
+      !Number.isSafeInteger(limit) || limit < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter valid coupon details."
+      });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO coupons
+       (code, discount_percent, minimum_order, usage_limit,
+        used_count, expires_at, active)
+       VALUES (?, ?, ?, ?, 0, ?, 1)`,
+      [code, discount, minimum, limit, expiry]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Coupon created successfully.",
+      id: result.insertId
+    });
+  } catch (error) {
+    console.error("Create coupon error:", error.message);
+
+    res.status(error.code === "ER_DUP_ENTRY" ? 409 : 500).json({
+      success: false,
+      message: error.code === "ER_DUP_ENTRY"
+        ? "This coupon code already exists."
+        : "Could not create coupon."
+    });
+  }
+});
+
+
+// 3. Activate or deactivate an existing coupon
+app.patch("/api/admin/coupons/:id/active", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  const id = Number(req.params.id);
+  const active = Number(req.body.active);
+
+  if (!Number.isSafeInteger(id) || id < 1 || ![0, 1].includes(active)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid coupon ID or status."
+    });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE coupons SET active = ? WHERE id = ?",
+      [active, id]
+    );
+
+    if (!result.affectedRows) {
+      return res.status(404).json({
+        success: false,
+        message: "Coupon not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Coupon status updated."
+    });
+  } catch (error) {
+    console.error("Coupon status error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Could not update coupon status."
+    });
+  }
+});
+
+
+// 4. Delete a coupon
+app.delete("/api/admin/coupons/:id", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM coupons WHERE id = ?",
+      [req.params.id]
+    );
+
+    if (!result.affectedRows) {
+      return res.status(404).json({
+        success: false,
+        message: "Coupon not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Coupon deleted successfully."
+    });
+  } catch (error) {
+    console.error("Delete coupon error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Could not delete coupon."
+    });
+  }
+});
+
+
+app.get("/admin/coupons", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "..", "public", "admin", "coupons.html")
+  );
+});
+
+
+
+/* ========== ADMIN CUSTOMER MANAGEMENT ========== */
+
+app.get("/api/admin/customers", async (req, res) => {
+  // Only logged-in administrators can view customer data.
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const [customers] = await pool.query(`
+      SELECT
+        customer_name,
+        email,
+        phone,
+        COUNT(*) AS total_orders,
+        COALESCE(SUM(total), 0) AS total_spent,
+        MAX(created_at) AS last_order
+      FROM orders
+      GROUP BY customer_name, email, phone
+      ORDER BY last_order DESC
+    `);
+
+    res.json({
+      success: true,
+      count: customers.length,
+      customers
+    });
+  } catch (error) {
+    console.error("Admin customers error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Could not load customers."
+    });
+  }
+});
+
+
+/* ========== APPOINTMENT MANAGEMENT ========== */
+
+// 1. Customer books an appointment
+app.post("/api/appointments", async (req, res) => {
+  try {
+    const {
+      customerName,
+      phone,
+      appointmentDate,
+      appointmentTime
+    } = req.body;
+
+    if (
+      typeof customerName !== "string" ||
+      !customerName.trim() ||
+      customerName.trim().length > 100 ||
+      typeof phone !== "string" ||
+      !/^\d{10}$/.test(phone.trim()) ||
+      typeof appointmentDate !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate) ||
+      typeof appointmentTime !== "string" ||
+      !appointmentTime.trim() ||
+      appointmentTime.trim().length > 30
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter valid appointment details."
+      });
+    }
+
+   
+const dateParts = appointmentDate.split("-").map(Number);
+const [year, month, day] = dateParts;
+
+const selectedDate = new Date(Date.UTC(year, month - 1, day));
+
+const validDate =
+  dateParts.length === 3 &&
+  selectedDate.getUTCFullYear() === year &&
+  selectedDate.getUTCMonth() === month - 1 &&
+  selectedDate.getUTCDate() === day;
+
+const now = new Date();
+const today =
+  now.getFullYear() + "-" +
+  String(now.getMonth() + 1).padStart(2, "0") + "-" +
+  String(now.getDate()).padStart(2, "0");
+
+if (!validDate || appointmentDate < today) {
+  return res.status(400).json({
+    success: false,
+    message: "Please select a valid date from today onward."
+  });
+}
+
+
+    if (
+      Number.isNaN(selectedDate.getTime()) ||
+      selectedDate.toISOString().slice(0, 10) !== appointmentDate ||
+      selectedDate < today
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a valid date from today onward."
+      });
+    }
+
+    const appointmentCode =
+      "APT-" +
+      Date.now().toString(36).toUpperCase() +
+      "-" +
+      Math.random().toString(36).slice(2, 7).toUpperCase();
+
+    const [result] = await pool.query(
+      `INSERT INTO appointments
+        (appointment_code, customer_name, phone,
+         appointment_date, appointment_time, status)
+       VALUES (?, ?, ?, ?, ?, 'requested')`,
+      [
+        appointmentCode,
+        customerName.trim(),
+        phone.trim(),
+        appointmentDate,
+        appointmentTime.trim()
+      ]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Appointment requested successfully.",
+      appointment: {
+        id: result.insertId,
+        appointmentCode,
+        customerName: customerName.trim(),
+        phone: phone.trim(),
+        appointmentDate,
+        appointmentTime,
+        status: "requested"
+      }
+    });
+  } catch (error) {
+    console.error("Create appointment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not book your appointment."
+    });
+  }
+});
+
+
+// 2. Admin views all appointments
+app.get("/api/admin/appointments", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  try {
+    const [appointments] = await pool.query(`
+      SELECT
+        id,
+        appointment_code,
+        customer_name,
+        phone,
+        appointment_date,
+        appointment_time,
+        status,
+        created_at
+      FROM appointments
+      ORDER BY appointment_date DESC, id DESC
+    `);
+
+    return res.json({
+      success: true,
+      count: appointments.length,
+      appointments
+    });
+  } catch (error) {
+    console.error("Admin appointments error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not load appointments."
+    });
+  }
+});
+
+
+// 3. Admin updates appointment status
+app.patch("/api/admin/appointments/:id/status", async (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in as admin."
+    });
+  }
+
+  const id = Number(req.params.id);
+  const { status } = req.body;
+
+  const allowedStatuses = [
+    "requested",
+    "confirmed",
+    "completed",
+    "cancelled"
+  ];
+
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 1 ||
+    !allowedStatuses.includes(status)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid appointment ID or status."
+    });
+  }
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE appointments SET status = ? WHERE id = ?",
+      [status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      const [rows] = await pool.query(
+        "SELECT id FROM appointments WHERE id = ?",
+        [id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Appointment not found."
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: "Appointment status updated successfully."
+    });
+  } catch (error) {
+    console.error("Update appointment status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not update appointment status."
+    });
+  }
+});
+
+/* ---------- Admin: product image upload (file from computer, no URL) ---------- */
+const imgFs = require("fs");
+const imgUploadDir = path.join(__dirname, "..", "public", "uploads");
+imgFs.mkdirSync(imgUploadDir, { recursive: true });
+
+function imgDetectExt(buf) {
+  if (buf.length < 12) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
+  if (buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
+  if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WEBP") return "webp";
+  return null;
+}
+
+app.post(
+  "/api/admin/products/:code/image",
+  express.raw({ type: "image/*", limit: "5mb" }),
+  async (req, res) => {
+    if (!req.session.admin) {
+      return res.status(401).json({ success: false, message: "Not logged in." });
+    }
+    try {
+      const code = String(req.params.code);
+      const body = req.body;
+      if (!Buffer.isBuffer(body) || body.length === 0) {
+        return res.status(400).json({ success: false, message: "Please choose a JPG, PNG or WEBP image (max 5 MB)." });
+      }
+      const ext = imgDetectExt(body);
+      if (!ext) {
+        return res.status(400).json({ success: false, message: "Only JPG, PNG or WEBP images are allowed." });
+      }
+      const [rows] = await pool.query(
+        "SELECT id, image_url FROM products WHERE product_code = ?", [code]
+      );
+      if (!rows[0]) {
+        return res.status(404).json({ success: false, message: "Product not found." });
+      }
+      const fileName = `${code.replace(/[^a-zA-Z0-9_-]/g, "_")}-${Date.now()}.${ext}`;
+      await imgFs.promises.writeFile(path.join(imgUploadDir, fileName), body);
+      const imageUrl = `/uploads/${fileName}`;
+      await pool.query("UPDATE products SET image_url = ? WHERE id = ?", [imageUrl, rows[0].id]);
+
+      // delete the old uploaded file, if there was one
+      const old = rows[0].image_url;
+      if (typeof old === "string" && old.startsWith("/uploads/")) {
+        imgFs.unlink(path.join(imgUploadDir, path.basename(old)), () => {});
+      }
+      res.json({ success: true, imageUrl });
+    } catch (error) {
+      console.error("Image upload error:", error.message);
+      res.status(500).json({ success: false, message: "Could not upload the image." });
+    }
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

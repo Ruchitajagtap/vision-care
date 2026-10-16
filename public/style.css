@@ -256,7 +256,11 @@ input:focus, select:focus, textarea:focus {
 /* ---------------- Hero ---------------- */
 .hero {
   background: linear-gradient(120deg, var(--navy), #1B4A70);
-  color: #fff;
+  color: #071ca3;
+  /* background-image: url("image/bg1.png"); */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
 }
 .hero-inner {
   max-width: 1240px;

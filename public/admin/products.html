@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Care | Product Management</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    
+/* Admin sidebar */
+.admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 235px;
+  padding: 24px 14px;
+  background: linear-gradient(180deg, #087f73, #064e50);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.sidebar-brand {
+  font-size: 19px;
+  font-weight: bold;
+  padding: 5px 10px 30px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: 13px 14px;
+  border-radius: 8px;
+  color: #e0f2f1;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+  background: #119b8d;
+  color: white;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #ccfbf1;
+}
+
+/* Make room for the fixed sidebar */
+body {
+  padding-left: 235px;
+}
+
+@media (max-width: 700px) {
+  .admin-sidebar {
+    position: relative;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .sidebar-brand {
+    padding: 8px 10px 14px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .sidebar-nav a {
+    white-space: nowrap;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  body {
+    padding-left: 0;
+  }
+}
+
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 20px 28px;
+      background: #0f766e;
+      color: #ffffff;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.12);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+    }
+
+    header a:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    main {
+      width: min(1200px, 100%);
+      margin: 30px auto;
+      padding: 0 22px;
+    }
+
+    .panel {
+      padding: 24px;
+      margin-bottom: 24px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-heading {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 23px;
+    }
+
+    .section-description {
+      margin: 0 0 18px;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #message {
+      margin: 12px 0;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .product-form-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .product-form-heading h2 {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 22px;
+    }
+
+    .product-form-heading p {
+      margin: 0;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #toggleProductForm {
+      padding: 11px 18px;
+      border: 1px solid #0f766e;
+      border-radius: 9px;
+      background: #ffffff;
+      color: #0f766e;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #toggleProductForm:hover {
+      background: #0f766e;
+      color: #ffffff;
+    }
+
+    #addProductForm {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px 22px;
+      padding: 24px;
+      margin-top: 20px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+    }
+
+    /* This rule MUST stay outside the #addProductForm rule above. */
+    #addProductForm[hidden] {
+      display: none !important;
+    }
+
+    #addProductForm .form-field {
+      min-width: 0;
+      margin: 0;
+    }
+
+    #addProductForm label {
+      display: block;
+      margin-bottom: 8px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    #addProductForm input,
+    #addProductForm select,
+    #addProductForm textarea {
+      display: block;
+      width: 100%;
+      min-height: 44px;
+      padding: 11px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      background: #ffffff;
+      color: #0f172a;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #addProductForm input:focus,
+    #addProductForm select:focus,
+    #addProductForm textarea:focus {
+      border-color: #0f9488;
+      box-shadow: 0 0 0 3px rgba(15, 148, 136, 0.12);
+    }
+
+    #addProductForm textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    #addProductForm .full-width {
+      grid-column: 1 / -1;
+    }
+
+    #addProductForm button[type="submit"] {
+      min-height: 46px;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 9px;
+      background: #087f78;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    #addProductForm button[type="submit"]:hover {
+      background: #06665f;
+      transform: translateY(-1px);
+    }
+
+    #addProductForm button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #formMessage {
+      margin: 0;
+      color: #0f766e;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    #formMessage.error {
+      color: #b91c1c;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      white-space: nowrap;
+    }
+
+    thead {
+      background: #f1f5f9;
+    }
+
+    th {
+      padding: 15px 16px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 15px 16px;
+      border-top: 1px solid #e8edf3;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    tbody tr:hover {
+      background: #f0fdfa;
+    }
+
+    .status-active {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-inactive {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 650px) {
+      header {
+        padding: 18px;
+      }
+
+      header h1 {
+        font-size: 19px;
+      }
+
+      main {
+        margin: 20px auto;
+        padding: 0 12px;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      #addProductForm {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px;
+      }
+
+      #addProductForm .full-width {
+        grid-column: auto;
+      }
+    }
+
+    .thumb { width: 64px; height: 46px; object-fit: contain; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; display: block; }
+    .noimg { display: inline-block; width: 64px; height: 46px; line-height: 46px; text-align: center; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; }
+    .img-btn { padding: 8px 12px; border: 0; border-radius: 6px; background: #087f78; color: #fff; cursor: pointer; font-size: 13px; }
+    .img-btn:disabled { opacity: .6; cursor: wait; }
+
+  </style>
+</head>
+
+
+<body>
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">◉ Vision Care Admin</div>
+
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard.html">
+        ⌂ &nbsp; Dashboard
+      </a>
+
+      <a href="/admin/products.html" class="active">
+        ▣ &nbsp; Products
+      </a>
+
+      <a href="/admin/orders.html">
+        🛒 &nbsp; Orders
+      </a>
+
+      <a href="/admin/coupons.html">
+        ◇ &nbsp; Coupons
+      </a>
+
+      <a href="/admin/customers.html">
+        ♙ &nbsp; Customers
+      </a>
+
+      <a href="/admin/appointments.html">
+        ▦ &nbsp; Appointments
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      Expert Eye Optic<br>
+      Admin Panel v1.0
+    </div>
+  </aside>
+  <!-- END SIDEBAR -->
+
+  <header>
+    <h1>Vision Care — Products</h1>
+    <a href="/admin/dashboard.html">Back to Dashboard</a>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2 class="section-heading">Product Management</h2>
+      <p class="section-description">
+        View and manage the products stored in your database.
+      </p>
+
+      <p id="message" role="status" aria-live="polite">
+        Loading products...
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Product Code</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Brand</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th>Image</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="product-form-heading">
+        <div>
+          <h2>Add New Product</h2>
+          <p>Add a new eyewear product to your inventory.</p>
+        </div>
+
+        <button
+          type="button"
+          id="toggleProductForm"
+          aria-controls="addProductForm"
+          aria-expanded="true"
+        >
+          Hide Form
+        </button>
+      </div>
+
+      <form id="addProductForm">
+        <p class="form-field">
+          <label for="productCode">Product Code *</label>
+          <input
+            id="productCode"
+            name="product_code"
+            type="text"
+            required
+            maxlength="50"
+            placeholder="e.g. VC-GLASS-002"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productName">Product Name *</label>
+          <input
+            id="productName"
+            name="name"
+            type="text"
+            required
+            maxlength="150"
+            placeholder="e.g. Classic Black Eyeglasses"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productCategory">Category *</label>
+          <input
+            id="productCategory"
+            name="category"
+            type="text"
+            required
+            maxlength="100"
+            placeholder="e.g. Eyeglasses"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productBrand">Brand</label>
+          <input
+            id="productBrand"
+            name="brand"
+            type="text"
+            maxlength="100"
+            placeholder="Enter brand name"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productPrice">Selling Price (₹) *</label>
+          <input
+            id="productPrice"
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            placeholder="999"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productOriginalPrice">Original Price (₹)</label>
+          <input
+            id="productOriginalPrice"
+            name="original_price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="1299"
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productStock">Stock Quantity *</label>
+          <input
+            id="productStock"
+            name="stock"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+            required
+          >
+        </p>
+
+        <p class="form-field">
+          <label for="productImage">Product Image (jpg, PNG or WEBP , max 5 MB)</label>
+          <input
+            id="productImage"
+            type="file"
+            accept="Image/jpeg,image/png,image/webp"
+          >
+        </p>
+
+        <p class="form-field full-width">
+          <label for="productDescription">Product Description</label>
+          <textarea
+            id="productDescription"
+            name="description"
+            rows="4"
+            maxlength="5000"
+            placeholder="Describe the product..."
+          ></textarea>
+        </p>
+
+        <button type="submit">Add Product</button>
+
+        <p
+          id="formMessage"
+          class="full-width"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const addProductForm = document.getElementById("addProductForm");
+    const toggleProductFormButton = document.getElementById("toggleProductForm");
+    const formMessage = document.getElementById("formMessage");
+    const addProductButton = addProductForm.querySelector('button[type="submit"]');
+    const message = document.getElementById("message");
+    const tableBody = document.getElementById("productTableBody");
+
+    // Hidden file picker used by the "Upload Image" buttons in the table
+    const rowFileInput = document.createElement("input");
+    rowFileInput.type = "file";
+    rowFileInput.accept = "image/jpeg,image/png,image/webp";
+    rowFileInput.hidden = true;
+    document.body.appendChild(rowFileInput);
+    let rowUploadCode = null;
+
+    function checkImageFile(file) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return "Only JPG, PNG or WEBP images are allowed.";
+      if (file.size > 5 * 1024 * 1024) return "Image must be 5 MB or smaller.";
+      return null;
+    }
+
+    // Upload an image file for a product (no URL needed)
+    async function uploadProductImage(productCode, file) {
+      const response = await fetch(
+        "/api/admin/products/" + encodeURIComponent(productCode) + "/image",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": file.type },
+          body: file
+        }
+      );
+      const data = await response.json();
+      if (response.status === 401) {
+        window.location.replace("/admin/login.html");
+        return;
+      }
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Image upload failed.");
+      }
+      return data.imageUrl;
+    }
+
+    // Show or hide the Add Product form.
+    toggleProductFormButton.addEventListener("click", () => {
+      const shouldHide = !addProductForm.hidden;
+      addProductForm.hidden = shouldHide;
+      toggleProductFormButton.textContent = shouldHide ? "Show Form" : "Hide Form";
+      toggleProductFormButton.setAttribute("aria-expanded", String(!shouldHide));
+    });
+
+    // Load products from the protected admin API.
+    async function loadProducts() {
+      message.textContent = "Loading products...";
+
+      try {
+        const sessionResponse = await fetch("/api/admin/me", { credentials: "same-origin" });
+
+        if (sessionResponse.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+        if (!sessionResponse.ok) {
+          throw new Error("Could not verify your admin session.");
+        }
+
+        const productsResponse = await fetch("/api/admin/products", { credentials: "same-origin" });
+
+        if (productsResponse.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+
+        const data = await productsResponse.json();
+
+        if (!productsResponse.ok || !data.success) {
+          throw new Error(data.message || "Could not load products.");
+        }
+
+        // Current images come from the public products API (product code -> image)
+        const imageMap = {};
+        try {
+          const pub = await fetch("/api/products");
+          const pubData = await pub.json();
+          (pubData.products || []).forEach((p) => { imageMap[p.id] = p.imageUrl; });
+        } catch (e) { /* images just show as "No image" */ }
+
+        tableBody.replaceChildren();
+
+        if (!data.products || data.products.length === 0) {
+          message.textContent = "No products found.";
+          return;
+        }
+
+        data.products.forEach((product) => {
+          const row = document.createElement("tr");
+
+          const values = [
+            product.id,
+            product.product_code,
+            product.name,
+            product.category,
+            product.brand || "—",
+            "₹" + Number(product.price).toLocaleString("en-IN"),
+            product.stock
+          ];
+
+          values.forEach((value) => {
+            const cell = document.createElement("td");
+            cell.textContent = value ?? "—";
+            row.appendChild(cell);
+          });
+
+          const statusCell = document.createElement("td");
+          const statusBadge = document.createElement("span");
+          const isActive = Number(product.active) === 1;
+          statusBadge.className = isActive ? "status-active" : "status-inactive";
+          statusBadge.textContent = isActive ? "Active" : "Inactive";
+          statusCell.appendChild(statusBadge);
+          row.appendChild(statusCell);
+
+          // Image cell
+          const imgUrl = imageMap[product.product_code] || product.image_url;
+          const imgCell = document.createElement("td");
+          if (imgUrl) {
+            const img = document.createElement("img");
+            img.className = "thumb";
+            img.src = imgUrl;
+            img.alt = product.name;
+            imgCell.appendChild(img);
+          } else {
+            const none = document.createElement("span");
+            none.className = "noimg";
+            none.textContent = "No image";
+            imgCell.appendChild(none);
+          }
+          row.appendChild(imgCell);
+
+          // Action cell
+          const actionCell = document.createElement("td");
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "img-btn";
+          btn.textContent = imgUrl ? "Change Image" : "Upload Image";
+          btn.addEventListener("click", () => {
+            rowUploadCode = product.product_code;
+            rowFileInput.value = "";
+            rowFileInput.click();
+          });
+          actionCell.appendChild(btn);
+          row.appendChild(actionCell);
+
+          tableBody.appendChild(row);
+        });
+
+        message.textContent = "Loaded " + data.products.length + " product(s) successfully.";
+      } catch (error) {
+        console.error("Product loading error:", error);
+        message.textContent = "Could not load products. Please check your connection and try again.";
+      }
+    }
+
+    // Upload / change image from a table row
+    rowFileInput.addEventListener("change", async () => {
+      const file = rowFileInput.files[0];
+      if (!file || !rowUploadCode) return;
+
+      const problem = checkImageFile(file);
+      if (problem) { message.textContent = problem; return; }
+
+      message.textContent = "Uploading image for " + rowUploadCode + "...";
+      try {
+        await uploadProductImage(rowUploadCode, file);
+        await loadProducts();
+        message.textContent = "Image uploaded for " + rowUploadCode + ".";
+      } catch (error) {
+        message.textContent = error.message || "Image upload failed.";
+      }
+    });
+
+    // Submit a new product to the backend.
+    addProductForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      formMessage.textContent = "";
+      formMessage.classList.remove("error");
+
+      const imageFile = document.getElementById("productImage").files[0];
+      if (imageFile) {
+        const problem = checkImageFile(imageFile);
+        if (problem) {
+          formMessage.textContent = problem;
+          formMessage.classList.add("error");
+          return;
+        }
+      }
+
+      addProductButton.disabled = true;
+      addProductButton.textContent = "Saving...";
+
+      const formData = new FormData(addProductForm);
+      const product = Object.fromEntries(formData.entries());
+      product.image_url = ""; // image is uploaded as a file after the product is saved
+
+      try {
+        const response = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(product)
+        });
+
+        const data = await response.json();
+
+        if (response.status === 401) {
+          window.location.replace("/admin/login.html");
+          return;
+        }
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Could not add product.");
+        }
+
+        let note = "Product added successfully!";
+        if (imageFile) {
+          try {
+            await uploadProductImage(product.product_code.trim(), imageFile);
+            note = "Product and image added successfully!";
+          } catch (uploadError) {
+            note = "Product added, but the image failed: " + uploadError.message +
+              " Use the Upload Image button in the table.";
+          }
+        }
+
+        addProductForm.reset();
+        document.getElementById("productStock").value = "0";
+        await loadProducts();
+        formMessage.textContent = note;
+      } catch (error) {
+        console.error("Add product error:", error);
+        formMessage.textContent = error.message || "Could not save product. Please try again.";
+        formMessage.classList.add("error");
+      } finally {
+        addProductButton.disabled = false;
+        addProductButton.textContent = "Add Product";
+      }
+    });
+
+    // Start loading the page.
+    loadProducts();
+  </script>
+</body>
+</html>

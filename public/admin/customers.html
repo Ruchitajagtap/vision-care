@@ -1,0 +1,544 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers | Vision Care Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: #243746;
+    }
+
+    .sidebar {
+      width: 235px;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding: 28px 16px;
+      background: linear-gradient(180deg, #087f73, #064e50);
+      color: white;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: bold;
+      margin: 0 10px 8px;
+    }
+
+    .sidebar-subtitle {
+      color: #c5e4df;
+      font-size: 12px;
+      margin: 0 10px 30px;
+      letter-spacing: 1px;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 13px 14px;
+      margin-bottom: 7px;
+      color: #e5eeee;
+      text-decoration: none;
+      border-radius: 7px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background: #119b8d;
+      color: white;
+    }
+
+    .main {
+      margin-left: 235px;
+      min-width: 0;
+      padding: 32px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: 27px;
+      margin-bottom: 7px;
+      color: #163d3d;
+    }
+
+    .muted {
+      color: #718087;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search {
+      width: 300px;
+      max-width: 100%;
+      padding: 11px 13px;
+      border: 1px solid #d6e0e2;
+      border-radius: 7px;
+      font-size: 14px;
+      background: white;
+      outline-color: #087f73;
+    }
+
+    .button {
+      border: none;
+      border-radius: 7px;
+      padding: 11px 16px;
+      background: #087f73;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .button:hover {
+      background: #06665d;
+    }
+
+    .button.secondary {
+      background: #e2f1ef;
+      color: #08665e;
+    }
+
+    .button.secondary:hover {
+      background: #cce7e2;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card,
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 3px 12px rgba(25, 55, 60, 0.04);
+    }
+
+    .stat-card p {
+      color: #718087;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card h2 {
+      font-size: 28px;
+      color: #087f73;
+    }
+
+    .panel {
+      margin-bottom: 24px;
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .panel-heading h2 {
+      font-size: 19px;
+      color: #263f46;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 750px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 14px 12px;
+      border-bottom: 1px solid #e9eeee;
+      font-size: 13px;
+    }
+
+    th {
+      color: #617176;
+      background: #f8fafa;
+      font-size: 12px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #f8fcfb;
+    }
+
+    .customer-name {
+      color: #174e4b;
+      font-weight: bold;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e1f5e8;
+      color: #207442;
+      white-space: nowrap;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      color: #718087;
+    }
+
+    #message {
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    #message.error {
+      color: #b42323;
+    }
+
+    #message.success {
+      color: #19703a;
+    }
+
+    @media (max-width: 1000px) {
+      .main {
+        padding: 24px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .search {
+        width: 250px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding: 18px 12px;
+      }
+
+      .sidebar-subtitle {
+        margin-bottom: 15px;
+      }
+
+      .sidebar nav a {
+        display: inline-block;
+        margin: 3px 2px;
+        padding: 10px;
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 20px 14px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        width: 100%;
+      }
+
+      .search {
+        width: 100%;
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">Vision Care</div>
+    <div class="sidebar-subtitle">ADMIN PANEL</div>
+
+    <nav>
+      <a href="/admin/dashboard.html">Dashboard</a>
+      <a href="/admin/products.html">Products</a>
+      <a href="/admin/orders.html">Orders</a>
+      <a href="/admin/coupons.html">Coupons</a>
+      <a href="/admin/customers.html" class="active">Customers</a>
+      <a href="/admin/appointments.html">Appointments</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <h1>Customers Management</h1>
+        <p class="muted">View customers who have placed orders with Vision Care.</p>
+      </div>
+
+      <div class="toolbar">
+        <input
+          type="search"
+          id="searchInput"
+          class="search"
+          placeholder="Search name, email or phone..."
+          aria-label="Search customers"
+        >
+
+        <button class="button secondary" id="refreshBtn" type="button">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <p>Total Customers</p>
+        <h2 id="customerCount">—</h2>
+      </div>
+
+      <div class="stat-card">
+        <p>Total Orders</p>
+        <h2 id="totalOrders">—</h2>
+      </div>
+
+      <div class="stat-card">
+        <p>Total Customer Spending</p>
+        <h2 id="totalSpent">—</h2>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <h2>Customers List</h2>
+        <p class="muted" id="resultLabel">Loading customers...</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Total Orders</th>
+              <th>Total Spent</th>
+              <th>Last Order</th>
+            </tr>
+          </thead>
+
+          <tbody id="customersTable">
+            <tr>
+              <td colspan="6" class="empty">Loading customers...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+
+  </main>
+
+  <script>
+    const customersTable = document.getElementById("customersTable");
+    const customerCount = document.getElementById("customerCount");
+    const totalOrders = document.getElementById("totalOrders");
+    const totalSpent = document.getElementById("totalSpent");
+    const searchInput = document.getElementById("searchInput");
+    const message = document.getElementById("message");
+    const resultLabel = document.getElementById("resultLabel");
+
+    let allCustomers = [];
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, function (char) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[char];
+      });
+    }
+
+    function formatMoney(value) {
+      return "₹" + Number(value || 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    function showMessage(text, type = "") {
+      message.textContent = text;
+      message.className = type;
+    }
+
+    function renderCustomers(customers) {
+      customerCount.textContent = customers.length;
+
+      totalOrders.textContent = customers.reduce(function (sum, customer) {
+        return sum + (Number(customer.total_orders) || 0);
+      }, 0).toLocaleString("en-IN");
+
+      totalSpent.textContent = formatMoney(
+        customers.reduce(function (sum, customer) {
+          return sum + (Number(customer.total_spent) || 0);
+        }, 0)
+      );
+
+      resultLabel.textContent =
+        `Showing ${customers.length} customer${customers.length === 1 ? "" : "s"}`;
+
+      if (customers.length === 0) {
+        customersTable.innerHTML =
+          '<tr><td colspan="6" class="empty">No customers found.</td></tr>';
+        return;
+      }
+
+      customersTable.innerHTML = customers.map(function (customer) {
+        return `
+          <tr>
+            <td class="customer-name">${escapeHTML(customer.customer_name || "—")}</td>
+            <td>${escapeHTML(customer.email || "—")}</td>
+            <td>${escapeHTML(customer.phone || "—")}</td>
+            <td><span class="status">${escapeHTML(customer.total_orders ?? 0)}</span></td>
+            <td>${formatMoney(customer.total_spent)}</td>
+            <td>${formatDate(customer.last_order)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function loadCustomers() {
+      showMessage("");
+      resultLabel.textContent = "Loading customers...";
+
+      customersTable.innerHTML =
+        '<tr><td colspan="6" class="empty">Loading customers...</td></tr>';
+
+      try {
+        const response = await fetch("/api/admin/customers", {
+          credentials: "same-origin"
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || response.status === 403) {
+          customersTable.innerHTML =
+            '<tr><td colspan="6" class="empty">Please log in as an administrator, then reload this page.</td></tr>';
+
+          customerCount.textContent = "—";
+          totalOrders.textContent = "—";
+          totalSpent.textContent = "—";
+          resultLabel.textContent = "Authentication required";
+          showMessage("Your admin session may have expired. Please log in again.", "error");
+          return;
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Could not load customers.");
+        }
+
+        allCustomers = Array.isArray(data.customers) ? data.customers : [];
+        filterCustomers();
+
+        showMessage("Customer data loaded successfully.", "success");
+      } catch (error) {
+        customersTable.innerHTML =
+          '<tr><td colspan="6" class="empty">Unable to load customer data.</td></tr>';
+
+        customerCount.textContent = "—";
+        totalOrders.textContent = "—";
+        totalSpent.textContent = "—";
+        resultLabel.textContent = "Could not load customers";
+
+        showMessage(
+          error.message + " Check that the backend server is running.",
+          "error"
+        );
+      }
+    }
+
+    function filterCustomers() {
+      const term = searchInput.value.trim().toLowerCase();
+
+      const filtered = allCustomers.filter(function (customer) {
+        return [
+          customer.customer_name,
+          customer.email,
+          customer.phone
+        ].some(function (value) {
+          return String(value || "").toLowerCase().includes(term);
+        });
+      });
+
+      renderCustomers(filtered);
+    }
+
+    searchInput.addEventListener("input", filterCustomers);
+    document.getElementById("refreshBtn").addEventListener("click", loadCustomers);
+
+    loadCustomers();
+  </script>
+
+</body>
+</html>
