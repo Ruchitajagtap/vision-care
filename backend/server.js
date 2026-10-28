@@ -1400,6 +1400,121 @@ app.post(
   }
 );
 
+/* ========== RAZORPAY ONLINE PAYMENT ========== */
+const rzCrypto = require("crypto");
+
+// Step 1: create a Razorpay order for an already-saved (unpaid) website order
+app.post("/api/payments/create", async (req, res) => {
+  try {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return res.status(500).json({ success: false, message: "Online payment is not configured." });
+    }
+
+    const orderCode = String(req.body.orderCode || "").trim();
+    const [rows] = await pool.query(
+      "SELECT id, order_code, total, payment_method, payment_status FROM orders WHERE order_code = ?",
+      [orderCode]
+    );
+    const order = rows[0];
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found." });
+    }
+    if (order.payment_method === "cod") {
+      return res.status(400).json({ success: false, message: "This is a cash on delivery order." });
+    }
+    if (order.payment_status !== "pending") {
+      return res.status(400).json({ success: false, message: "This order is already paid or closed." });
+    }
+
+    const amountInPaise = Math.round(Number(order.total) * 100);
+
+    const rzResponse = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Basic " + Buffer.from(keyId + ":" + keySecret).toString("base64")
+      },
+      body: JSON.stringify({
+        amount: amountInPaise,
+        currency: "INR",
+        receipt: order.order_code
+      })
+    });
+
+    const rzOrder = await rzResponse.json();
+
+    if (!rzResponse.ok || !rzOrder.id) {
+      console.error("Razorpay create order error:", JSON.stringify(rzOrder));
+      return res.status(502).json({ success: false, message: "Could not start the payment. Please try again." });
+    }
+
+    await pool.query("UPDATE orders SET razorpay_order_id = ? WHERE id = ?", [rzOrder.id, order.id]);
+
+    res.json({
+      success: true,
+      keyId,
+      razorpayOrderId: rzOrder.id,
+      amount: rzOrder.amount,
+      currency: rzOrder.currency
+    });
+  } catch (error) {
+    console.error("Payment create error:", error.message);
+    res.status(500).json({ success: false, message: "Could not start the payment." });
+  }
+});
+
+// Step 2: verify the payment signature and mark the order as paid
+app.post("/api/payments/verify", async (req, res) => {
+  try {
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      return res.status(500).json({ success: false, message: "Online payment is not configured." });
+    }
+
+    const orderCode = String(req.body.orderCode || "").trim();
+    const razorpayOrderId = String(req.body.razorpay_order_id || "");
+    const razorpayPaymentId = String(req.body.razorpay_payment_id || "");
+    const razorpaySignature = String(req.body.razorpay_signature || "");
+
+    const [rows] = await pool.query(
+      "SELECT id, payment_status, razorpay_order_id FROM orders WHERE order_code = ?",
+      [orderCode]
+    );
+    const order = rows[0];
+
+    if (!order || !order.razorpay_order_id || order.razorpay_order_id !== razorpayOrderId) {
+      return res.status(400).json({ success: false, message: "Payment details do not match this order." });
+    }
+
+    const expected = rzCrypto
+      .createHmac("sha256", keySecret)
+      .update(order.razorpay_order_id + "|" + razorpayPaymentId)
+      .digest("hex");
+
+    const a = Buffer.from(expected);
+    const b = Buffer.from(razorpaySignature);
+
+    if (a.length !== b.length || !rzCrypto.timingSafeEqual(a, b)) {
+      return res.status(400).json({ success: false, message: "Payment verification failed." });
+    }
+
+    await pool.query(
+      `UPDATE orders
+       SET payment_status = 'paid', razorpay_payment_id = ?
+       WHERE id = ? AND payment_status = 'pending'`,
+      [razorpayPaymentId, order.id]
+    );
+
+    res.json({ success: true, message: "Payment verified successfully." });
+  } catch (error) {
+    console.error("Payment verify error:", error.message);
+    res.status(500).json({ success: false, message: "Could not verify the payment." });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
