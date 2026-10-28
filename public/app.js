@@ -253,7 +253,7 @@ function renderHome() {
           <button class="btn btn-outline-light btn-lg" data-action="go" data-route="#/appointment">Book eye check-up</button>
         </div>
       </div>
-       <div class="image/bg1.png"></div>-
+       ${heroSliderHtml()}
       </div>
     </div>
   </section>
@@ -263,11 +263,30 @@ function renderHome() {
     <div class="category-grid">
       ${CATEGORIES.map((c) => `
         <div class="category-card" data-action="go-catalog" data-cat="${c.id}">
-          <div class="lens-frame"><img src="${c.id === "contact-lenses" ? svgToDataUri(contactLensSVG()) : svgToDataUri(glassesSVG(catIcons[c.id], "#12324F", "#EAF4FA", c.id === "kids"))}" alt="${c.label}"/></div>
-          <div class="category-card-label">${c.label}</div>
-        </div>`).join("")}
-    </div>
-  </section>
+          <div class="lens-frame"><img
+  
+src="${({
+  eyeglasses: 'image/eyeglass.png',
+  sunglasses: 'image/sunglass.png',
+  'computer-glasses': 'image/computerglass.png',
+  'contact-lenses': 'image/contactlens.png',
+  'blue-light': 'image/bluelight.png',
+  kids: 'image/kidswear.png',
+  'reading-glasses': 'image/eyeglass.png'
+})[c.id] || 'image/sunglass.png'}"
+
+  alt="${c.label}"
+  loading="lazy"
+/>
+
+        </div>
+
+        <div class="category-card-label">${c.label}</div>
+      </div>
+    `).join("")}
+  </div>
+</section>
+
 
   <section class="container">
     <div class="catalog-header">
@@ -714,7 +733,7 @@ function renderCheckout() {
           <input type="radio" name="payment" data-action="set-payment" data-value="${v}" ${cs.payment === v ? "checked" : ""}/>
           <span>${l}</span>
         </label>`).join("")}
-      ${cs.payment !== "cod" ? `<div class="info-note">This is a simulated payment for demo purposes. A real gateway (e.g. Razorpay) can be connected here using environment-variable keys on a real backend.</div>` : ""}
+      ${cs.payment !== "cod" ? `<div class="info-note">You will pay securely through Razorpay (UPI, cards or nit banking) after you place the order.</div>` : ""}
       <div class="checkbox-row">
         <input type="checkbox" id="termsCheck" data-action="toggle-terms" ${cs.terms ? "checked" : ""}/>
         <label for="termsCheck">I agree to the Terms &amp; Conditions and Refund Policy</label>
@@ -829,6 +848,114 @@ function revalidateCoupon(subtotal) {
   };
 }
 
+// ---------- Razorpay online payment helpers ----------
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Could not load the payment window. Please check your internet connection."));
+    document.head.appendChild(script);
+  });
+}
+
+// Returns { paid: true } or { paid: false, reason: "..." }
+async function payWithRazorpay(orderCode, customer) {
+  try {
+    await loadRazorpayScript();
+
+    const createRes = await fetch("/api/payments/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderCode })
+    });
+    const created = await createRes.json();
+    if (!createRes.ok || !created.success) {
+      throw new Error(created.message || "Could not start the payment.");
+    }
+
+    return await new Promise((resolve) => {
+      const rzp = new window.Razorpay({
+        key: created.keyId,
+        amount: created.amount,
+        currency: created.currency,
+        name: "Vision Care",
+        description: "Order " + orderCode,
+        order_id: created.razorpayOrderId,
+        prefill: {
+          name: customer.name,
+          email: customer.email,
+          contact: customer.phone
+        },
+        theme: { color: "#0f766e" },
+        handler: async (response) => {
+          try {
+            const verifyRes = await fetch("/api/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderCode,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verified = await verifyRes.json();
+            resolve(
+              verifyRes.ok && verified.success
+                ? { paid: true }
+                : { paid: false, reason: verified.message || "Payment verification failed." }
+            );
+          } catch (e) {
+            resolve({ paid: false, reason: "Could not verify the payment." });
+          }
+        },
+        modal: {
+          ondismiss: () => resolve({ paid: false, reason: "Payment was not completed." })
+        }
+      });
+      rzp.open();
+    });
+  } catch (error) {
+    return { paid: false, reason: error.message || "Payment failed." };
+  }
+}
+
+// ---------- Hero image slider (auto-rolling) ----------
+function heroSliderHtml() {
+  // Put your images in public/images/hero/ and list their file names here
+  const slides = [
+    "image/hero1.png",
+    "image/hero2.png",
+    "image/hero3.jpg"
+  ];
+  const secondsPerSlide = 4;
+
+  if (slides.length < 2) {
+    return `<div class="hero-slider"><img src="${slides[0]}" alt="Vision Care eyewear" style="opacity:1"/></div>`;
+  }
+
+  const n = slides.length;
+  const total = n * secondsPerSlide;
+  const share = 100 / n;
+  const fade = Math.min(share / 4, 5);
+
+  return `
+  <style>
+    @keyframes heroFade {
+      0% { opacity: 0; }
+      ${fade}% { opacity: 1; }
+      ${share}% { opacity: 1; }
+      ${share + fade}% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+  </style>
+  <div class="hero-slider">
+    ${slides.map((src, i) => `<img src="${src}" alt="Vision Care eyewear" style="animation: heroFade ${total}s infinite; animation-delay: ${i * secondsPerSlide}s;"/>`).join("")}
+  </div>`;
+}
+
 async function placeOrderFlow() {
   if (!validateCheckoutStepAll()) return;
   const cs = checkoutState;
@@ -910,6 +1037,26 @@ async function placeOrderFlow() {
     toast(error.message || "Could not place your order. Please try again.");
     rerender();
     return;
+  }
+
+  // ---- Online payment (UPI / card / online) via Razorpay ----
+  if (order.payment !== "cod") {
+    const pay = await payWithRazorpay(savedOrder.orderCode, order.info);
+    alert(
+      pay.paid
+        ? "Payment successful!"
+        : (pay.reason || "Payment failed.") + " Your order is saved with payment pending."
+    );
+  }
+
+  // ---- Online payment (UPI / card / online) via Razorpay ----
+  if (order.payment !== "cod") {
+    const pay = await payWithRazorpay(savedOrder.orderCode, order.info);
+    alert(
+      pay.paid
+        ? "Payment successful!"
+        : (pay.reason || "Payment failed.") + " Your order is saved with payment pending."
+    );
   }
 
   order.id = savedOrder.orderCode;

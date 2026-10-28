@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 const pool = require("./config/db");
 
 const app = express();
+app.set("trust proxy", 1);
 const LENS_PRICES = {
   basic: 0,
   bluelight: 400,
