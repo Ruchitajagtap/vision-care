@@ -5,6 +5,7 @@ const path = require("path");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
 const pool = require("./config/db");
+const cloudinary = require("./config/cloudinary");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -1347,17 +1348,23 @@ app.patch("/api/admin/appointments/:id/status", async (req, res) => {
   }
 });
 
-/* ---------- Admin: product image upload (file from computer, no URL) ---------- */
-const imgFs = require("fs");
-const imgUploadDir = path.join(__dirname, "..", "public", "uploads");
-imgFs.mkdirSync(imgUploadDir, { recursive: true });
-
+/* ---------- Admin: product image upload (saved on Cloudinary) ---------- */
 function imgDetectExt(buf) {
   if (buf.length < 12) return null;
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
   if (buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
   if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WEBP") return "webp";
   return null;
+}
+
+function uploadBufferToCloudinary(buffer, publicId) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "vision-care/products", public_id: publicId, resource_type: "image" },
+      (error, result) => (error ? reject(error) : resolve(result))
+    );
+    stream.end(buffer);
+  });
 }
 
 app.post(
@@ -1378,21 +1385,15 @@ app.post(
         return res.status(400).json({ success: false, message: "Only JPG, PNG or WEBP images are allowed." });
       }
       const [rows] = await pool.query(
-        "SELECT id, image_url FROM products WHERE product_code = ?", [code]
+        "SELECT id FROM products WHERE product_code = ?", [code]
       );
       if (!rows[0]) {
         return res.status(404).json({ success: false, message: "Product not found." });
       }
-      const fileName = `${code.replace(/[^a-zA-Z0-9_-]/g, "_")}-${Date.now()}.${ext}`;
-      await imgFs.promises.writeFile(path.join(imgUploadDir, fileName), body);
-      const imageUrl = `/uploads/${fileName}`;
+      const publicId = `${code.replace(/[^a-zA-Z0-9_-]/g, "_")}-${Date.now()}`;
+      const result = await uploadBufferToCloudinary(body, publicId);
+      const imageUrl = result.secure_url; // permanent https link
       await pool.query("UPDATE products SET image_url = ? WHERE id = ?", [imageUrl, rows[0].id]);
-
-      // delete the old uploaded file, if there was one
-      const old = rows[0].image_url;
-      if (typeof old === "string" && old.startsWith("/uploads/")) {
-        imgFs.unlink(path.join(imgUploadDir, path.basename(old)), () => {});
-      }
       res.json({ success: true, imageUrl });
     } catch (error) {
       console.error("Image upload error:", error.message);
@@ -1400,7 +1401,6 @@ app.post(
     }
   }
 );
-
 /* ========== RAZORPAY ONLINE PAYMENT ========== */
 const rzCrypto = require("crypto");
 
